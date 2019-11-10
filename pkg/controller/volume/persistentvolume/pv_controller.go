@@ -240,9 +240,9 @@ func (ctrl *PersistentVolumeController) syncClaim(claim *v1.PersistentVolumeClai
 
 	if !metav1.HasAnnotation(claim.ObjectMeta, pvutil.AnnBindCompleted) {
 		return ctrl.syncUnboundClaim(claim)
-	} else {
-		return ctrl.syncBoundClaim(claim)
 	}
+
+	return ctrl.syncBoundClaim(claim)
 }
 
 // checkVolumeSatisfyClaim checks if the volume requested by the claim satisfies the requirements of the claim
@@ -403,12 +403,12 @@ func (ctrl *PersistentVolumeController) syncUnboundClaim(claim *v1.PersistentVol
 						return err
 					}
 					return nil
-				} else {
-					// This should never happen because someone had to remove
-					// AnnBindCompleted annotation on the claim.
-					klog.V(4).Infof("synchronizing unbound PersistentVolumeClaim[%s]: volume already bound to different claim %q by controller, THIS SHOULD NEVER HAPPEN", claimToClaimKey(claim), claimrefToClaimKey(volume.Spec.ClaimRef))
-					return fmt.Errorf("Invalid binding of claim %q to volume %q: volume already claimed by %q", claimToClaimKey(claim), claim.Spec.VolumeName, claimrefToClaimKey(volume.Spec.ClaimRef))
 				}
+
+				// This should never happen because someone had to remove
+				// AnnBindCompleted annotation on the claim.
+				klog.V(4).Infof("synchronizing unbound PersistentVolumeClaim[%s]: volume already bound to different claim %q by controller, THIS SHOULD NEVER HAPPEN", claimToClaimKey(claim), claimrefToClaimKey(volume.Spec.ClaimRef))
+				return fmt.Errorf("Invalid binding of claim %q to volume %q: volume already claimed by %q", claimToClaimKey(claim), claim.Spec.VolumeName, claimrefToClaimKey(volume.Spec.ClaimRef))
 			}
 		}
 	}
@@ -656,17 +656,17 @@ func (ctrl *PersistentVolumeController) syncVolume(volume *v1.PersistentVolume) 
 						return err
 					}
 					return nil
-				} else {
-					// The PV must have been created with this ptr; leave it alone.
-					klog.V(4).Infof("synchronizing PersistentVolume[%s]: volume is bound by user to a claim that is bound to another volume, waiting for the claim to get unbound", volume.Name)
-					// This just updates the volume phase and clears
-					// volume.Spec.ClaimRef.UID. It leaves the volume pre-bound
-					// to the claim.
-					if err = ctrl.unbindVolume(volume); err != nil {
-						return err
-					}
-					return nil
 				}
+
+				// The PV must have been created with this ptr; leave it alone.
+				klog.V(4).Infof("synchronizing PersistentVolume[%s]: volume is bound by user to a claim that is bound to another volume, waiting for the claim to get unbound", volume.Name)
+				// This just updates the volume phase and clears
+				// volume.Spec.ClaimRef.UID. It leaves the volume pre-bound
+				// to the claim.
+				if err = ctrl.unbindVolume(volume); err != nil {
+					return err
+				}
+				return nil
 			}
 		}
 	}
